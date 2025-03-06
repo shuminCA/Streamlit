@@ -1,22 +1,52 @@
 import streamlit as st
 import requests
 import logging
+import json
+import base64
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def initialize_session_state():
+    # Check for stored credentials in query parameters
+    stored_credentials = st.query_params.get("credentials", None)
+    
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    
+    # Initialize login state
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
+    
+    # Initialize API URL and bearer token
     if "api_url" not in st.session_state:
         st.session_state.api_url = ""
     if "bearer_token" not in st.session_state:
         st.session_state.bearer_token = ""
+    
+    # Initialize welcome state
     if "show_welcome" not in st.session_state:
         st.session_state.show_welcome = True
+    
+    # If we have stored credentials, try to restore the session
+    if stored_credentials:
+        try:
+            # Decode the credentials from base64
+            decoded_bytes = base64.b64decode(stored_credentials)
+            decoded_str = decoded_bytes.decode('utf-8')
+            credentials = json.loads(decoded_str)
+            
+            # Restore the session state
+            st.session_state.api_url = credentials.get("api_url", "")
+            st.session_state.bearer_token = credentials.get("bearer_token", "")
+            
+            # Only set logged_in to True if we have both values
+            if st.session_state.api_url and st.session_state.bearer_token:
+                st.session_state.logged_in = True
+                logger.info("Session restored from stored credentials")
+        except Exception as e:
+            logger.error(f"Error restoring session: {str(e)}")
 
 
 def make_api_request(data):
@@ -63,17 +93,20 @@ def display_login_page():
         st.subheader("Enter API Configuration")
         
         api_url = st.text_input(
-            "API URL", 
+            "API URL",
             value="",
             placeholder="Enter API URL"
         )
         
         bearer_token = st.text_input(
-            "Bearer Token", 
+            "Bearer Token",
             value="",
             placeholder="Enter Bearer Token",
             type="password"
         )
+        
+        remember_me = st.checkbox("Remember me", value=True,
+                                help="Keep me logged in when I refresh the page")
         
         submit_button = st.form_submit_button("Login", use_container_width=True)
     
@@ -81,9 +114,28 @@ def display_login_page():
         if not api_url or not bearer_token:
             st.error("Please enter both API URL and Bearer Token")
         else:
+            # Store credentials in session state
             st.session_state.api_url = api_url
             st.session_state.bearer_token = bearer_token
             st.session_state.logged_in = True
+            
+            # If remember me is checked, store credentials in query parameters
+            if remember_me:
+                # Create a JSON object with the credentials
+                credentials = {
+                    "api_url": api_url,
+                    "bearer_token": bearer_token
+                }
+                
+                # Encode the credentials as base64 to avoid issues with special characters
+                credentials_json = json.dumps(credentials)
+                credentials_bytes = credentials_json.encode('utf-8')
+                credentials_base64 = base64.b64encode(credentials_bytes).decode('utf-8')
+                
+                # Store the encoded credentials in query parameters
+                st.query_params["credentials"] = credentials_base64
+                logger.info("Credentials stored in query parameters")
+            
             st.success("Login successful!")
             st.rerun()
 
@@ -156,7 +208,16 @@ def main():
     # Add logout button in the sidebar
     with st.sidebar:
         if st.button("Logout"):
+            # Clear session state
             st.session_state.logged_in = False
+            st.session_state.api_url = ""
+            st.session_state.bearer_token = ""
+            
+            # Clear stored credentials from query parameters
+            if "credentials" in st.query_params:
+                del st.query_params["credentials"]
+                logger.info("Credentials cleared from query parameters")
+            
             st.rerun()
         
         if st.button("Show Welcome Page"):
