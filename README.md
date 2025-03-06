@@ -68,11 +68,9 @@ streamlit run BriefMe.py
 
 ## 📸 Screenshots
 
-*[Add screenshots of the application here]*
+<img width="1545" alt="Screenshot 2025-03-05 at 5 22 58 PM" src="https://github.com/user-attachments/assets/f5ecf41d-9c4b-4c70-9ed5-a0034cb7af71" />
 
-## 📄 License
-
-[Specify license information]
+<img width="1539" alt="Screenshot 2025-03-05 at 5 23 11 PM" src="https://github.com/user-attachments/assets/e16e27e5-642b-4089-a5c8-29880d58c101" />
 
 ## 🔗 Dependencies
 
@@ -85,7 +83,3 @@ streamlit run BriefMe.py
 ## 👥 Contributing
 
 Contributions, issues, and feature requests are welcome!
-
-## 📞 Contact
-
-[Add contact information here]
